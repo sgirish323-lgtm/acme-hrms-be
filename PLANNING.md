@@ -281,40 +281,192 @@ Response → Client
 
 ---
 
-## 7. Database Design
+## 7. ER Diagram & Database Design
 
-### 7.1 Employees Table
+### 7.1 Entity Relationship Diagram (ERD)
 
 ```
+        ┌──────────────────────┐          ┌─────────────────────────────┐
+        │      countries       │          │        departments          │
+        ├──────────────────────┤          ├─────────────────────────────┤
+        │ id (UUID) PK         │          │ id (UUID) PK                │
+        │ name TEXT UNIQUE     │          │ name TEXT                   │
+        │ created_at TIMESTAMP │          │ created_at TIMESTAMP        │
+        │ updated_at TIMESTAMP │          │ updated_at TIMESTAMP        │
+        │ deleted_at TIMESTAMP │          │ deleted_at TIMESTAMP        │
+        └─────────┬────────────┘          └──────────────┬──────────────┘
+                  │                                      │
+                  │                                      │
+                  │                                      │
+                  ▼                                      ▼
+        ┌──────────────────────────────────────────────────────────┐
+        │                        employees                         │
+        ├──────────────────────────────────────────────────────────┤
+        │ id (UUID) PK                                             │
+        │ name TEXT                                                │
+        │ country_id UUID FK  ◄────────────── countries.id         │
+        │ department_id UUID FK ◄─────────── departments.id        │
+        │ created_at TIMESTAMP                                     │
+        │ updated_at TIMESTAMP                                     │
+        │ deleted_at TIMESTAMP                                     │
+        └──────────────┬───────────────────────────────────────────┘
+                       │
+                       │
+                       ▼
+        ┌──────────────────────────────────────────────────────────┐
+        │                        salaries                          │
+        ├──────────────────────────────────────────────────────────┤
+        │ id (UUID) PK                                             │
+        │ employee_id UUID FK ◄────────── employees.id             │
+        │ base_salary NUMERIC                                      │
+        │ bonus NUMERIC                                            │
+        │ effective_date DATE                                      │
+        │ created_at TIMESTAMP                                     │
+        │ updated_at TIMESTAMP                                     │
+        │ deleted_at TIMESTAMP                                     │
+        └──────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Relationship Summary
+
+- **countries → employees** (1:N)
+- **departments → employees** (1:N)
+- **employees → salaries** (1:N)
+
+---
+
+### Key Clarification
+
+- `departments` is linked **ONLY to employees**
+- `salaries` is linked **ONLY to employees**
+- No direct relationship between:
+  - departments ↔ salaries ❌
+  - countries ↔ salaries ❌
+
+---
+
+### Clean Data Flow
+
+```
+Country → Employee → Salary
+Department → Employee → Salary
+```
+
+---
+
+### 7.2 Countries Table (Static / Seeded)
+
+```sql
+countries (
+  id UUID PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP
+  deleted_at TIMESTAMP
+)
+```
+
+**Notes:**
+
+- Seeded initially (e.g., India, USA, UK, Germany)
+- No CRUD APIs required
+- Ensures consistent country data
+- Enables efficient filtering and grouping
+
+---
+
+### 7.3 Departments Table (Static / Seeded)
+
+```sql
+departments (
+  id UUID PRIMARY KEY,
+  name TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP
+  deleted_at TIMESTAMP
+)
+```
+
+---
+
+### 7.4 Employees Table
+
+```sql
 employees (
   id UUID PRIMARY KEY,
-  name TEXT,
-  country TEXT,
-  department TEXT,
-  created_at TIMESTAMP
+  name TEXT NOT NULL,
+  country_id UUID REFERENCES countries(id),
+  department_id UUID REFERENCES departments(id),
+  created_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP
+  deleted_at TIMESTAMP
 )
 ```
 
 ---
 
-### 7.2 Salaries Table
+### 7.5 Salaries Table
 
-```
+```sql
 salaries (
   id UUID PRIMARY KEY,
-  employee_id UUID,
-  base_salary NUMERIC,
-  bonus NUMERIC,
-  effective_date DATE,
-  created_at TIMESTAMP
+  employee_id UUID REFERENCES employees(id),
+  base_salary NUMERIC NOT NULL,
+  bonus NUMERIC DEFAULT 0,
+  effective_date DATE NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP
+  deleted_at TIMESTAMP
 )
 ```
 
 ---
 
-### 7.3 Salary History
+### 7.6 Relationships
 
-Maintained via multiple records in `salaries` using `effective_date`.
+#### Countries → Employees
+
+- One country has many employees
+
+#### Departments → Employees
+
+- One department has many employees
+
+#### Employees → Salaries
+
+- One employee has many salary records
+
+---
+
+### 7.7 Key Design Decisions
+
+#### Normalization
+
+- Countries and departments are separated into lookup tables
+- Avoids duplicate and inconsistent values
+
+#### Avoiding Redundancy
+
+- `country_id` is **not stored in salaries**
+- Derived via employee relation when needed
+
+#### Salary History
+
+- Maintained via `effective_date`
+- No separate history table required
+
+---
+
+### 7.8 Indexing Strategy
+
+```sql
+CREATE INDEX idx_employees_country_id ON employees(country_id);
+CREATE INDEX idx_employees_department_id ON employees(department_id);
+CREATE INDEX idx_salaries_employee_id ON salaries(employee_id);
+CREATE INDEX idx_salaries_effective_date ON salaries(effective_date);
+```
 
 ---
 
