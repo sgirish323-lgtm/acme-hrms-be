@@ -1,0 +1,66 @@
+{
+  "name": "acme-hrms",
+  "version": "1.0.0",
+  "description": "ACME HRMS",
+  "engines": {
+    "node": ">=22.16.0",
+    "npm": ">=11.4.1"
+  },
+  "scripts": {
+    "lint": "eslint --fix .",
+    "format": "prettier --write .",
+    "lint-staged": "lint-staged",
+    "prebuild": "echo \"❌ removing older build. ❌\" && rimraf build",
+    "build": "echo \"💪 creating build. 💪\" && tsc",
+    "postbuild": "tsc-alias && echo \"🔥 build successfull. 🔥\"",
+    "postinstall-prod": "echo \"💀 skipping husky installation for production environment. 💀\"",
+    "postinstall-dev": "husky",
+    "postinstall": "if-env NODE_ENV=production && npm run postinstall-prod || npm run postinstall-dev",
+    "migrations:generate": "bash -c 'if [ -z \"$1\" ]; then printf \"\\033[0;31m❌ Please provide a migration name. ❌\\033[0m\\n\"; exit 1; fi; if [[ ! \"$1\" =~ ^[a-z0-9_]+$ ]]; then printf \"\\033[0;31m❌ Invalid migration name. Only a-z, 0-9 and underscore (_) are allowed. ❌\\033[0m\\n\"; exit 1; fi; ts-node ./node_modules/typeorm/cli.js migration:generate -d ./orm-data-source.ts ./lib/migrations/auto_$1' --",
+    "migrations:migrate": "ts-node run-migrations.ts migrate",
+    "migrations:rollback": "ts-node run-migrations.ts rollback",
+    "seeders:create": "ts-node create-seeder.ts",
+    "seeders:seed": "ts-node run-seeders.ts seed",
+    "seeders:rollback": "ts-node run-seeders.ts rollback"
+  },
+  "dependencies": {
+    "express": "^4.21.1",
+    "if-env": "^1.0.4",
+    "joi": "^17.13.3",
+    "moment-timezone": "^0.5.46",
+    "pg": "^8.16.0",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.24",
+    "winston": "^3.15.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@faker-js/faker": "^9.8.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.7.5",
+    "@types/pg": "^8.15.2",
+    "eslint": "^9.21.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "globals": "^16.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "path-exists-cli": "^2.0.0",
+    "prettier": "^3.5.2",
+    "rimraf": "^6.0.1",
+    "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.10",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.24.1"
+  },
+  "lint-staged": {
+    "*.{js,ts}": [
+      "eslint --fix .",
+      "prettier --write .",
+      "git add ."
+    ]
+  }
+}

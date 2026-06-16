@@ -1,0 +1,9 @@
+node_modules/*
+build/*
+.prettierrc
+package.json
+tsconfig.json
+README.md
+PLANNING.md
+REQUIREMENTS.md
+lib/migrations/*
